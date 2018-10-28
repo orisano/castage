@@ -76,12 +76,12 @@ func readStageNames(dockerfilePath string) ([]string, error) {
 		return nil, errors.Wrap(err, "failed to parse instructions")
 	}
 
-	stageNames := make([]string, len(stages))
-	for i, stage := range stages {
+	stageNames := make([]string, 0, len(stages))
+	for _, stage := range stages {
 		if stage.Name == "" {
-			stage.Name = fmt.Sprint(i + 1)
+			continue
 		}
-		stageNames[i] = stage.Name
+		stageNames = append(stageNames, stage.Name)
 	}
 	return stageNames, nil
 }
