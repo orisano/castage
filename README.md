@@ -32,7 +32,7 @@ docker build -t image_name:app-cache --target=app --cache-from=image_name:vendor
 ```
 
 ## Author
-Nao YONASHIRO (@orisano)
+Nao Yonashiro (@orisano)
 
 ## License
 MIT
