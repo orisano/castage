@@ -27,6 +27,7 @@ func run() error {
 	imageName := flag.String("i", "", "image name (required)")
 	buildContext := flag.String("p", ".", "build context")
 	push := flag.Bool("push", false, "push")
+	buildKit := flag.Bool("buildkit", false, "BuildKit")
 	flag.Parse()
 
 	if *imageName == "" {
@@ -41,13 +42,30 @@ func run() error {
 
 	cachedStages := make([]string, 0, len(stageNames))
 	fmt.Println("set -ex")
-	for _, stageName := range stageNames {
-		cachedStage := fmt.Sprintf("%s:%s-cache", *imageName, stageName)
-		cachedStages = append(cachedStages, cachedStage)
-		fmt.Printf("docker pull %s || true\n", cachedStage)
-		fmt.Printf("docker build -t %s --target=%s --cache-from=%s %s\n", cachedStage, stageName, strings.Join(cachedStages, ","), *buildContext)
+	if *buildKit {
+		fmt.Printf("docker build -t %s --cache-from=%s --build-arg BUILDKIT_INLINE_CACHE=1 %s\n", fmt.Sprintf("%s:%s", *imageName, stageNames[len(stageNames)-1]), strings.Join(stageNames, ","), *buildContext)
+		for i, stageName := range stageNames {
+			if i == len(stageNames)-1 {
+				break
+			}
+			fmt.Printf("docker build -t %s --target=%s --build-arg BUILDKIT_INLINE_CACHE=1 %s &\n", fmt.Sprintf("%s:%s", *imageName, stageName), stageName, *buildContext)
+		}
+		fmt.Println("wait")
 		if *push {
-			fmt.Printf("docker push %s\n", cachedStage)
+			for _, stageName := range stageNames {
+				fmt.Printf("docker push %s &\n", fmt.Sprintf("%s:%s", *imageName, stageName))
+			}
+			fmt.Println("wait")
+		}
+	} else {
+		for _, stageName := range stageNames {
+			cachedStage := fmt.Sprintf("%s:%s", *imageName, stageName)
+			cachedStages = append(cachedStages, cachedStage)
+			fmt.Printf("docker pull %s || true\n", cachedStage)
+			fmt.Printf("docker build -t %s --target=%s --cache-from=%s %s\n", cachedStage, stageName, strings.Join(cachedStages, ","), *buildContext)
+			if *push {
+				fmt.Printf("docker push %s\n", cachedStage)
+			}
 		}
 	}
 
