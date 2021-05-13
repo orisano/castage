@@ -10,7 +10,6 @@ import (
 
 	"github.com/moby/buildkit/frontend/dockerfile/instructions"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
-	"golang.org/x/xerrors"
 )
 
 func main() {
@@ -37,7 +36,7 @@ func run() error {
 
 	stageNames, err := readStageNames(*dockerfilePath)
 	if err != nil {
-		return xerrors.Errorf("read stage names: %w", err)
+		return fmt.Errorf("read stage names: %w", err)
 	}
 
 	cachedStages := make([]string, 0, len(stageNames))
@@ -79,19 +78,19 @@ func readStageNames(dockerfilePath string) ([]string, error) {
 	} else {
 		f, err := os.Open(dockerfilePath)
 		if err != nil {
-			return nil, xerrors.Errorf("open Dockerfile: %w", err)
+			return nil, fmt.Errorf("open Dockerfile: %w", err)
 		}
 		defer f.Close()
 		r = f
 	}
 	result, err := parser.Parse(r)
 	if err != nil {
-		return nil, xerrors.Errorf("parse Dockerfile: %w", err)
+		return nil, fmt.Errorf("parse Dockerfile: %w", err)
 	}
 
 	stages, _, err := instructions.Parse(result.AST)
 	if err != nil {
-		return nil, xerrors.Errorf("parse instructions: %w", err)
+		return nil, fmt.Errorf("parse instructions: %w", err)
 	}
 
 	stageNames := make([]string, 0, len(stages))
